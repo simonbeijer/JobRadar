@@ -1,72 +1,224 @@
 "use client";
+
+import { useState, useEffect, useMemo } from "react";
 import { useUserContext } from "@/app/context/userContext";
+import { Job, JobFilters, JobsResponse } from "@/types";
+import JobList from "@/app/components/jobList";
+import SearchInput from "@/app/components/searchInput";
+import DateRangePicker from "@/app/components/dateRangePicker";
 
 export default function Dashboard() {
   const { user } = useUserContext();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [filters, setFilters] = useState<JobFilters>({
+    // Default to today's jobs as per PRD
+    dateFrom: new Date(),
+    dateTo: new Date(),
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+  const [isFetchingJobs, setIsFetchingJobs] = useState(false);
 
+  // Fetch jobs from external API (JobTech)
+  const fetchJobsFromAPI = async () => {
+    try {
+      setIsFetchingJobs(true);
+      const response = await fetch('/api/fetch-jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch jobs from API');
+      }
+
+      const result = await response.json();
+      console.log('Jobs fetched successfully:', result);
+      
+      // Refresh the job list
+      await fetchJobs();
+      
+      alert(`Successfully fetched ${result.result?.saved || 0} new jobs from JobTech API!`);
+    } catch (err) {
+      console.error('Error fetching jobs from API:', err);
+      setError('Failed to fetch jobs from JobTech API. Please try again.');
+    } finally {
+      setIsFetchingJobs(false);
+    }
+  };
+
+  // Fetch jobs from API
+  const fetchJobs = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.searchTerm) params.append('search', filters.searchTerm);
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom.toISOString());
+      if (filters.dateTo) params.append('dateTo', filters.dateTo.toISOString());
+      if (filters.appliedOnly) params.append('appliedOnly', 'true');
+      
+      const response = await fetch(`/api/jobs?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch jobs`);
+      }
+
+      const data: JobsResponse = await response.json();
+      setJobs(data.jobs.map(job => ({
+        ...job,
+        postedAt: new Date(job.postedAt),
+        createdAt: new Date(job.createdAt)
+      })));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load jobs. Please try again.';
+      setError(errorMessage);
+      console.error('Error fetching jobs:', err);
+      
+      // If this is a database/schema error, provide helpful guidance
+      if (errorMessage.includes('relation') || errorMessage.includes('table') || errorMessage.includes('Job')) {
+        setError('Database not ready. Please run: npx prisma migrate dev && npx prisma generate');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch jobs on component mount and when filters change
+  useEffect(() => {
+    fetchJobs();
+  }, [filters]);
+
+  // Update applied status
+  const updateAppliedStatus = async (jobId: string, applied: boolean) => {
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/applied`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ applied }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update job status');
+      }
+
+      // Update local state
+      setJobs(prev => 
+        prev.map(job => 
+          job.id === jobId ? { ...job, applied } : job
+        )
+      );
+    } catch (err) {
+      console.error('Error updating job status:', err);
+      setError('Failed to update job status. Please try again.');
+    }
+  };
+
+  // Handle search input change (debounced via useEffect)
+  const handleSearch = (searchTerm: string) => {
+    setFilters(prev => ({ ...prev, searchTerm }));
+  };
+
+  // Handle date range change
+  const handleDateChange = (dateFrom?: Date, dateTo?: Date) => {
+    setFilters(prev => ({ ...prev, dateFrom, dateTo }));
+  };
+
+  // Handle applied toggle
+  const handleAppliedToggle = (jobId: string, applied: boolean) => {
+    updateAppliedStatus(jobId, applied);
+  };
+
+  // Handle applied filter toggle
+  const handleAppliedFilterToggle = () => {
+    setFilters(prev => ({ ...prev, appliedOnly: !prev.appliedOnly }));
+  };
 
   return (
-    <div className="h-[calc(100vh-3rem)] bg-background flex flex-col overflow-hidden">
-      
-      <div className="flex-1 w-full max-w-4xl mx-auto p-4">
-        <div className="mb-4">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
-          <p className="text-grey">Here&apos;s your user information and dashboard overview.</p>
+    <div className="min-h-[calc(100vh-3rem)] bg-background">
+      <div className="w-full max-w-6xl mx-auto p-4">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome back, {user?.name || 'User'}!
+          </h1>
+          <p className="text-grey">
+            Find your next opportunity from today&apos;s job listings.
+          </p>
         </div>
 
-        <div className="bg-background rounded-lg shadow-sm border border-grey p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <svg className="w-5 h-5 text-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <h2 className="text-xl font-semibold text-foreground">User Information</h2>
+        {/* Filters Section */}
+        <div className="bg-background rounded-lg shadow-sm border border-grey/20 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Filter Jobs</h2>
+          
+          {/* Search Input */}
+          <div className="mb-6">
+            <SearchInput onSearch={handleSearch} />
           </div>
 
-          <div className="flex items-start gap-6 mb-6">
-            <div className="w-16 h-16 bg-grey rounded-full flex items-center justify-center text-foreground font-semibold text-lg">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-xl font-semibold text-foreground">{user?.name || 'User'}</h3>
-              <span className="inline-block bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full font-medium w-fit">
-                Active
-              </span>
-            </div>
+          {/* Date Range Picker */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-foreground mb-3">Posted Date</h3>
+            <DateRangePicker onDateChange={handleDateChange} defaultToToday={true} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-grey/20 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <svg className="w-5 h-5 text-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span className="font-semibold text-foreground">Email</span>
-              </div>
-              <p className="text-foreground">{user?.email || 'user@example.com'}</p>
-            </div>
-
-            <div className="bg-grey/20 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <svg className="w-5 h-5 text-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="font-semibold text-foreground">Location</span>
-              </div>
-              <p className="text-foreground">Your Location</p>
-            </div>
-
-            <div className="bg-grey/20 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <svg className="w-5 h-5 text-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="font-semibold text-foreground">Member Since</span>
-              </div>
-              <p className="text-foreground">{new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-            </div>
+          {/* Additional Filters */}
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleAppliedFilterToggle}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background ${
+                filters.appliedOnly
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                  : 'bg-grey/20 text-foreground hover:bg-grey/30'
+              }`}
+            >
+              {filters.appliedOnly ? 'Show All Jobs' : 'Applied Jobs Only'}
+            </button>
           </div>
         </div>
+
+        {/* Results Summary and Actions */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-foreground">
+            <span className="font-semibold">{jobs.length}</span> job{jobs.length !== 1 ? 's' : ''} found
+            {filters.searchTerm && (
+              <span className="text-grey"> for &quot;{filters.searchTerm}&quot;</span>
+            )}
+          </div>
+          <button
+            onClick={fetchJobsFromAPI}
+            disabled={isFetchingJobs}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background ${
+              isFetchingJobs
+                ? 'bg-grey/20 text-grey cursor-not-allowed'
+                : 'bg-primary hover:bg-primary/90 text-white'
+            }`}
+          >
+            {isFetchingJobs ? 'Fetching Jobs...' : 'Fetch New Jobs'}
+          </button>
+        </div>
+
+        {/* Job Listings */}
+        <JobList 
+          jobs={jobs}
+          onAppliedToggle={handleAppliedToggle}
+          isLoading={isLoading}
+          error={error}
+        />
       </div>
     </div>
   );

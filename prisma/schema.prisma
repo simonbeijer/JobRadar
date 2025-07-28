@@ -22,3 +22,16 @@ model User {
   role      String   @default("user") // "user" or "admin"
   createdAt DateTime @default(now())
 }
+
+model Job {
+  id        String   @id @default(cuid())
+  title     String
+  company   String
+  location  String
+  postedAt  DateTime
+  url       String   @unique
+  source    String   // "jobtech" (future: support multiple sources)
+  applied   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  emailed   Boolean  @default(false)
+}
