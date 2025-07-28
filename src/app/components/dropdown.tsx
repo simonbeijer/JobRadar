@@ -2,8 +2,14 @@
 import { useState, useEffect } from "react";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
 import Spinner from "./spinner";
+import { User } from "@/types";
 
-export default function Dropdown({ user, logoutUser }) {
+interface DropdownProps {
+  user: User | null;
+  logoutUser: () => void;
+}
+
+export default function Dropdown({ user, logoutUser }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const toggleDropdown = () => setIsOpen((prev) => !prev);
 

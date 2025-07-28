@@ -1,7 +1,20 @@
 "use client";
 import React from "react";
 
-export default function RadioGroup({ name, options, selected, onChange, label }) {
+interface RadioOption {
+  value: string;
+  label: string;
+}
+
+interface RadioGroupProps {
+  name: string;
+  options: RadioOption[];
+  selected: string;
+  onChange: (value: string) => void;
+  label?: string;
+}
+
+export default function RadioGroup({ name, options, selected, onChange, label }: RadioGroupProps) {
   return (
     <div className="flex flex-col mb-4">
       {label && <p className="block text-sm font-medium text-foreground mb-2">{label}</p>}

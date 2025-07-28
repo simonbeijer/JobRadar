@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUserContext } from "../../context/userContext";
 import Spinner from "../../components/spinner";
@@ -10,22 +10,22 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string>("");
   const { setUser } = useUserContext();
   const router = useRouter();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     if (!email.match(/^\S+@\S+\.\S+$/)) {
       setLoading(false);
-      setError(true);
+      setError("Invalid email format");
       return;
     }
     if (!password) {
       setLoading(false);
-      setError(true);
+      setError("Password is required");
       return;
     }
 
@@ -44,11 +44,11 @@ export default function Login() {
         router.push("/dashboard");
       } else {
         console.error('❌ Login failed:', response.status);
-        setError(true);
+        setError("Login failed. Please check your credentials.");
       }
     } catch (error) {
-      console.error('❌ Login error:', error.message);
-      setError(true);
+      console.error('❌ Login error:', error instanceof Error ? error.message : 'Unknown error');
+      setError("An error occurred during login.");
     } finally {
       setLoading(false);
     }
@@ -91,11 +91,10 @@ export default function Login() {
               />
               {error && (
                 <p className="text-red-500 text-sm text-center">
-                  Login failed. Please check your email and password.
+                  {error}
                 </p>
               )}
               <CustomButton 
-                callBack={handleSubmit} 
                 text="Sign In" 
                 disabled={loading} 
                 type="submit"

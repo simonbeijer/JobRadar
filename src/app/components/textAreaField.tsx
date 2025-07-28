@@ -1,7 +1,16 @@
 "use client";
 import React from "react";
 
-export default function TextAreaField({ name, value, onChange, placeholder, error, label }) {
+interface TextAreaFieldProps {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  label: string;
+}
+
+export default function TextAreaField({ name, value, onChange, placeholder, error, label }: TextAreaFieldProps) {
   return (
     <div className="flex flex-col">
       <label htmlFor={name} className="block text-sm font-medium text-foreground mb-2">

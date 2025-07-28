@@ -1,14 +1,14 @@
-name: Lint
+name: Code Quality
 
 on: [push, pull_request]
 
 jobs:
-  lint:
+  code-quality:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -18,6 +18,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npx eslint .
+      - name: Run Lint
+        run: npm run lint
+
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Build Check
+        run: npm run build
       

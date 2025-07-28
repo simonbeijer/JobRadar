@@ -1,10 +1,18 @@
 "use client";
-export default function Sidebar({ selectedWidget, setSelectedWidget }) {
+
+interface SidebarProps {
+  selectedWidget: string;
+  setSelectedWidget: (widget: string) => void;
+}
+
+export default function Sidebar({ selectedWidget, setSelectedWidget }: SidebarProps) {
   const widgetItems = ["Weather", "Analytics", "Dashboard"];
 
-  const setWidgetItem = (index) => {
-    let newItem = widgetItems[index];
-    setSelectedWidget(newItem);
+  const setWidgetItem = (index: number) => {
+    const newItem = widgetItems[index];
+    if (newItem) {
+      setSelectedWidget(newItem);
+    }
   };
 
   return (

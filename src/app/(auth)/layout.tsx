@@ -1,7 +1,12 @@
 import Header from "../components/header";
 import { UserProvider } from "../context/userContext";
+import { ReactNode } from "react";
 
-export default function AuthLayout({children}) {
+interface AuthLayoutProps {
+  children: ReactNode;
+}
+
+export default function AuthLayout({children}: AuthLayoutProps) {
     return (
         <UserProvider>
             <Header />

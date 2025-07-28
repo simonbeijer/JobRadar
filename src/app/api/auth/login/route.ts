@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import * as jose from "jose";
 
-const SECRET = process.env.JWT_SECRET;
+const SECRET = process.env.JWT_SECRET!;
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
@@ -40,8 +40,9 @@ export async function POST(request) {
       .setExpirationTime("1h")
       .sign(new TextEncoder().encode(SECRET));
 
+    const { password: _, ...userWithoutPassword } = user;
     const response = NextResponse.json(
-      { message: "User logged in", user: user },
+      { message: "User logged in", user: userWithoutPassword },
       { status: 200 }
     );
 

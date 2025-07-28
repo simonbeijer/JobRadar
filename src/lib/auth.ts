@@ -1,8 +1,8 @@
 import * as jose from "jose";
 
-const SECRET = process.env.JWT_SECRET;
+const SECRET = process.env.JWT_SECRET!;
 
-export async function verifyAuth(token) {
+export async function verifyAuth(token: string): Promise<jose.JWTPayload> {
   if (!token) throw new Error("Missing token");
 
   try {
@@ -12,6 +12,6 @@ export async function verifyAuth(token) {
     );
     return payload;
   } catch (err) {
-    throw new Error("Invalid or expired token", err);
+    throw new Error("Invalid or expired token");
   }
 }

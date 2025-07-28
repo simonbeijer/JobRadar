@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import * as jose from "jose";
 
-const SECRET = process.env.JWT_SECRET;
+const SECRET = process.env.JWT_SECRET!;
 
 export async function GET() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -21,7 +21,7 @@ export async function GET() {
   } catch (error) {
     console.log("Error auth user ", error);
     return NextResponse.json(
-      { user: null, massage: "Invalid token" },
+      { user: null, message: "Invalid token" },
       { status: 401 }
     );
   }

@@ -1,5 +1,18 @@
 "use client"
-export default function InputField({type, name, value, onChange, placeholder, error, label}) {
+
+type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search';
+
+interface InputFieldProps {
+  type: InputType;
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  label: string;
+}
+
+export default function InputField({type, name, value, onChange, placeholder, error, label}: InputFieldProps) {
 
   return (
     <div className="mb-4">

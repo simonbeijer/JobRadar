@@ -21,7 +21,7 @@ export default function Header() {
         console.error('❌ Logout failed:', response.status);
       }
     } catch (error) {
-      console.error('❌ Logout error:', error.message);
+      console.error('❌ Logout error:', error instanceof Error ? error.message : 'Unknown error');
     }
   };
   return (
