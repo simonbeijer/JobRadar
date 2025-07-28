@@ -3,7 +3,7 @@ describe('Home and Login Flow', () => {
 
     cy.visit('/');
 
-    cy.contains('Login').click();
+    cy.contains('Get Started').click();
 
     cy.get('input[name="email"]').type('user@example.com');
     cy.get('input[name="password"]').type('password123');

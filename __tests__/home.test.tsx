@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import Home from '../src/app/page'; // Adjust the import path as necessary
 
 describe('Home Page', () => {
-  it('renders a Login button', () => {
+  it('renders a Get Started link', () => {
     render(<Home />);
-    const loginButton = screen.getByRole('button', { name: /Login/i });
-    expect(loginButton).toBeInTheDocument();
+    const getStartedLink = screen.getByRole('link', { name: /Get Started/i });
+    expect(getStartedLink).toBeInTheDocument();
   });
 });
